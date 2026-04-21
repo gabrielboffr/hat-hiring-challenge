@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Seniority {
+  JUNIOR
+  MID_LEVEL
+  SENIOR
+  ESPECIALIST
+  MANAGER
+}
+
+enum ApproverLevel {
+  SALES_EXECUTIVE
+  COMMERCIAL_MANAGER
+  DIRECTOR
+  CEO
+}
+
+enum ProposalsStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+model PricingTable {
+  id              String    @id @default(uuid())
+  seniority       Seniority @default(JUNIOR)
+  costPerHour     Decimal   @unique
+  billRatePerHour Decimal
+  targetMargin    Decimal
+}
+
+model DiscountTable {
+  id                       String                    @id @default(uuid())
+  approverLevel            ApproverLevel             @unique @default(SALES_EXECUTIVE)
+  maxAllowedDiscount       Decimal
+  discountProposalApplieds DiscountProposalApplied[]
+}
+
+model Professionals {
+  id              String                 @id @default(uuid())
+  name            String
+  seniority       Seniority              @default(JUNIOR)
+  costPerHour     Decimal
+  billRatePerHour Decimal
+  proposals       ProposalProfessional[]
+}
+
+model Proposals {
+  id                       String                    @id @default(uuid())
+  client                   String
+  description              String
+  startDate                DateTime
+  endDate                  DateTime
+  status                   ProposalsStatus           @default(PENDING)
+  professionals            ProposalProfessional[]
+  totalCost                Decimal?
+  totalRevenue             Decimal?
+  grossMarginPct           Decimal?
+  discountProposalApplieds DiscountProposalApplied[]
+}
+
+model ProposalProfessional {
+  id             String        @id @default(uuid())
+  proposalId     String
+  professionalId String
+  estimatedHours Int
+  proposal       Proposals     @relation(fields: [proposalId], references: [id])
+  professional   Professionals @relation(fields: [professionalId], references: [id])
+}
+
+model DiscountProposalApplied {
+  id                 String        @id @default(uuid())
+  proposalId         String
+  approverLevel      ApproverLevel
+  discountApplied    Decimal
+  approvedAt         DateTime      @default(now())
+  originTotalRevenue Decimal
+  proposal           Proposals     @relation(fields: [proposalId], references: [id])
+  discountRule       DiscountTable @relation(fields: [approverLevel], references: [approverLevel])
+}
